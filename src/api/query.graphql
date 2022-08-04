@@ -1,0 +1,12 @@
+query ProductQuery($id: ID!) {
+  product(id: $id) {
+    id
+    title {
+      ru
+    }
+    cover {
+      src
+    }
+    price
+  }
+}

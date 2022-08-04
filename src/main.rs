@@ -9,9 +9,11 @@ use std::io;
 mod config;
 mod grant;
 mod queries;
+mod api;
 
 use crate::grant::extract;
 use crate::queries::Query;
+use crate::api::ApiClient;
 
 async fn index(
     schema: web::Data<Schema<Query, EmptyMutation, EmptySubscription>>,
@@ -30,15 +32,18 @@ async fn main() -> io::Result<()> {
     let cfg = config::load();
     let port = cfg.port.clone();
 
-    let schema = Schema::build(Query, EmptyMutation, EmptySubscription).finish();
-
+    
     HttpServer::new(move || {
         let auth = GrantsMiddleware::with_extractor(extract);
+        let api_client = ApiClient::build(&cfg.api_client.url, &cfg.api_client.token).unwrap();
+        let schema = Schema::build(Query, EmptyMutation, EmptySubscription)
+            .data(api_client)
+            .finish();
         App::new()
             .wrap(middleware::Logger::default())
+            .wrap(auth)
             .app_data(web::Data::new(cfg.clone()))
             .app_data(web::Data::new(schema.clone()))
-            .wrap(auth)
             .service(web::resource("/graphql").guard(guard::Post()).to(index))
     })
     .bind(format!("0.0.0.0:{port}", port = port))?

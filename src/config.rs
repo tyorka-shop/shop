@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ApiClient {
-    url: String,
-    token: String,
+    pub url: String,
+    pub token: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
