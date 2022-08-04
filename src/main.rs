@@ -1,22 +1,21 @@
 use actix_web::{self, guard, middleware, web, App, HttpServer};
 use actix_web_grants::permissions::AuthDetails;
 use actix_web_grants::GrantsMiddleware;
-use async_graphql::{EmptyMutation, EmptySubscription, Schema};
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
-use grant::{RoleData, Role};
+use grant::{Role, RoleData};
 use std::io;
 
+mod api;
 mod config;
 mod grant;
-mod queries;
-mod api;
+mod graphql_schema;
 
+use crate::api::{ApiClient, ApiClientExt};
 use crate::grant::extract;
-use crate::queries::Query;
-use crate::api::ApiClient;
+use crate::graphql_schema::{build_schema, GQLSchema};
 
 async fn index(
-    schema: web::Data<Schema<Query, EmptyMutation, EmptySubscription>>,
+    schema: web::Data<GQLSchema>,
     request: GraphQLRequest,
     role: AuthDetails<Role>,
 ) -> GraphQLResponse {
@@ -32,13 +31,10 @@ async fn main() -> io::Result<()> {
     let cfg = config::load();
     let port = cfg.port.clone();
 
-    
     HttpServer::new(move || {
         let auth = GrantsMiddleware::with_extractor(extract);
-        let api_client = ApiClient::build(&cfg.api_client.url, &cfg.api_client.token).unwrap();
-        let schema = Schema::build(Query, EmptyMutation, EmptySubscription)
-            .data(api_client)
-            .finish();
+        let api_client = ApiClient::new(&cfg.api_client.url, &cfg.api_client.token).unwrap();
+        let schema = build_schema().data(api_client).finish();
         App::new()
             .wrap(middleware::Logger::default())
             .wrap(auth)

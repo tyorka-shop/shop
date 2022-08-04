@@ -1941,6 +1941,7 @@ dependencies = [
  "confy",
  "env_logger",
  "graphql_client",
+ "log",
  "rand",
  "reqwest",
  "serde",

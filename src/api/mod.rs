@@ -1,4 +1,5 @@
 mod product;
+mod client;
 
-pub use product::get_product;
-pub use product::ApiClient;
+pub use client::{ApiClient, ApiClientExt};
+pub use product::{Product, ApiMethods};
