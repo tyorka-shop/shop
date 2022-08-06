@@ -1,18 +1,18 @@
+use crate::{
+    api::ApiClientConfig,
+    services::{RecaptchaConfig, TgBotConfig},
+};
 use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ApiClient {
-    pub url: String,
-    pub token: String,
-}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub port: String,
     pub secret: String,
 
-    pub api_client: ApiClient,
+    pub api_client: ApiClientConfig,
+    pub tg_client: TgBotConfig,
+    pub recaptcha: RecaptchaConfig,
 }
 
 pub fn make_secret_key() -> String {
@@ -23,15 +23,14 @@ pub fn make_secret_key() -> String {
         .collect()
 }
 
-impl ::std::default::Default for Config {
+impl Default for Config {
     fn default() -> Self {
         Self {
             port: "3001".into(),
             secret: make_secret_key(),
-            api_client: ApiClient {
-                url: "http://localhost:3000".into(),
-                token: "xxx".into(),
-            },
+            api_client: Default::default(),
+            tg_client: Default::default(),
+            recaptcha: Default::default(),
         }
     }
 }

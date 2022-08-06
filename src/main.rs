@@ -7,12 +7,15 @@ use std::io;
 
 mod api;
 mod config;
+mod entity;
 mod grant;
 mod graphql_schema;
+mod services;
 
-use crate::api::{ApiClient, ApiClientExt};
+use crate::api::{ApiClient, GraphQLClient};
 use crate::grant::extract;
-use crate::graphql_schema::{build_schema, GQLSchema};
+use graphql_schema::{build_schema, GQLSchema};
+use services::{OrderService, OrderServiceMethods, TgBot, TgBotExt, Recaptcha, RecaptchaMethods};
 
 async fn index(
     schema: web::Data<GQLSchema>,
@@ -33,8 +36,12 @@ async fn main() -> io::Result<()> {
 
     HttpServer::new(move || {
         let auth = GrantsMiddleware::with_extractor(extract);
-        let api_client = ApiClient::new(&cfg.api_client.url, &cfg.api_client.token).unwrap();
-        let schema = build_schema().data(api_client).finish();
+        let api_client = ApiClient::new(&cfg.api_client).unwrap();
+        let order_service = OrderService::new(api_client.clone(), TgBot::new(&cfg.tg_client));
+        let recaptcha = Recaptcha::new(&cfg.recaptcha);
+
+        let schema = build_schema().data(api_client).data(order_service).data(recaptcha).finish();
+
         App::new()
             .wrap(middleware::Logger::default())
             .wrap(auth)

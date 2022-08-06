@@ -3,6 +3,7 @@ query ProductQuery($id: ID!) {
     id
     title {
       ru
+      en
     }
     cover {
       src

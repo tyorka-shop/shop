@@ -1,5 +1,6 @@
 mod product;
-mod client;
+mod gql;
 
-pub use client::{ApiClient, ApiClientExt};
-pub use product::{Product, ApiMethods};
+
+pub use gql::{ApiClientConfig, ApiClient, GraphQLClient};
+pub use product::{ApiMethods, GetProductError};
