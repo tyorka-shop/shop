@@ -6,3 +6,9 @@ impl From<&str> for ID {
       Self(s.to_string())
   }
 }
+
+impl From<ID> for String {
+  fn from(id: ID) -> Self {
+      id.0
+  }
+}

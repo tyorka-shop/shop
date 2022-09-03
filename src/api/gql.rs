@@ -1,10 +1,12 @@
 use async_trait::async_trait;
 use config::ApiClientConfig;
 use graphql_client::Response;
-use log::{debug, error};
+use log::{debug, error, info};
 use reqwest::header;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{error::Error, fmt::Debug};
+
+use crate::cache;
 
 #[derive(Clone, Debug)]
 pub struct ApiClient {
@@ -23,6 +25,8 @@ pub trait GraphQLClient: Sized {
 
 pub enum GQLError {
     NoData,
+    BadResponse,
+    ReqwestError,
 }
 
 #[async_trait]
@@ -45,20 +49,34 @@ impl GraphQLClient for ApiClient {
         R: DeserializeOwned + Debug,
         T: Serialize + ?Sized + Sync,
     {
-        let response = self
-            .client
-            .post(&format!("{}{}", &self.base_url, "/graphql"))
-            .json(&query)
-            .send()
-            .await
-            .map_err(|e| {
-                error!("{}", e);
-                GQLError::NoData
-            })?;
+        let response = match cache::read(&query) {
+            Some(response) => {
+                info!("Get response from cache");
+                response
+            },
+            None => self
+                .client
+                .post(&format!("{}/graphql", &self.base_url))
+                .json(&query)
+                .send()
+                .await
+                .map_err(|e| {
+                    error!("{}", e);
+                    GQLError::NoData
+                })?
+                .text()
+                .await
+                .map_err(|e| {
+                    error!("{}", e);
+                    GQLError::BadResponse
+                })?,
+        };
 
-        let inner = response.json::<Response<R>>().await.map_err(|e| {
+        cache::write(&query, &response, 60);
+
+        let inner = serde_json::from_str::<Response<R>>(&response).map_err(|e| {
             error!("{}", e);
-            GQLError::NoData
+            GQLError::BadResponse
         })?;
 
         debug!("{:?}", &inner);
@@ -67,7 +85,7 @@ impl GraphQLClient for ApiClient {
             Some(data) => Ok(data),
             None => {
                 error!("{:?}", &inner.errors);
-                Err(GQLError::NoData)
+                Err(GQLError::ReqwestError)
             }
         }
     }

@@ -12,7 +12,7 @@ mod entity;
 mod grant;
 mod graphql_schema;
 mod services;
-
+mod cache;
 use config;
 
 use crate::api::{ApiClient, GraphQLClient};

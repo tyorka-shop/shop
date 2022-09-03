@@ -32,6 +32,16 @@ pub async fn extract(req: &ServiceRequest) -> Result<Vec<Role>, Error> {
 
 pub struct RoleData(pub AuthDetails<Role>);
 
+pub trait RoleDataExt {
+    fn is_admin(&self) -> bool;
+}
+
+impl RoleDataExt for RoleData {
+    fn is_admin(&self) -> bool {
+        self.0.permissions.contains(&Role::Admin)
+    }
+}
+
 impl From<&RoleData> for String {
     fn from(role: &RoleData) -> String {
         match role.0.permissions[0] {

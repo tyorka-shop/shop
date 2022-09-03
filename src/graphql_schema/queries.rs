@@ -1,6 +1,6 @@
 use crate::{
     api::{ApiClient, ApiMethods},
-    grant::RoleData,
+    grant::{RoleData, RoleDataExt},
 };
 use async_graphql::{Context, Error, Object, Result, SimpleObject};
 
@@ -26,7 +26,16 @@ impl Queries {
     }
 
     async fn product<'a>(&self, ctx: &Context<'a>, id: String) -> Result<String> {
+        match ctx.data::<RoleData>() {
+            Ok(role) => {
+                if !&role.is_admin() {
+                    return Err(Error::new("Access denied"));
+                }
+            }
+            Err(e) => {return Err(e)},
+        }
         let api_client = ctx.data::<ApiClient>().unwrap();
+
         let product = api_client
             .get_product(&id)
             .await

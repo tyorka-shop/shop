@@ -9,17 +9,19 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(Recipient::Table)
+                    .table(CartItem::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Recipient::Id)
+                        ColumnDef::new(CartItem::Id)
                             .string()
                             .not_null()
                             .uuid()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Recipient::Name).string().not_null())
-                    .col(ColumnDef::new(Recipient::Email).string().not_null())
+                    .col(ColumnDef::new(CartItem::Count).integer().not_null())
+                    .col(ColumnDef::new(CartItem::Price).integer().not_null())
+                    .col(ColumnDef::new(CartItem::OrderId).string().not_null())
+                    .col(ColumnDef::new(CartItem::ProductId).string().not_null())
                     .to_owned(),
             )
             .await
@@ -27,16 +29,18 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(Recipient::Table).to_owned())
+            .drop_table(Table::drop().table(CartItem::Table).to_owned())
             .await
     }
 }
 
 #[derive(Iden)]
-enum Recipient {
+enum CartItem {
     Table,
     
     Id,
-    Name,
-    Email,
+    Count,
+    Price,
+    OrderId,
+    ProductId,
 }
