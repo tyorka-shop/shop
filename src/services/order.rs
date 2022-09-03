@@ -1,7 +1,9 @@
 use async_trait::async_trait;
 use indoc::formatdoc;
 use log::{error, info};
+use sea_orm::{DatabaseConnection, Set, ActiveModelTrait};
 use std::fmt;
+use entity::recipient;
 
 use crate::api::{ApiClient, ApiMethods, GetProductError};
 use crate::entity::{Order, Product};
@@ -9,6 +11,7 @@ use crate::entity::{Order, Product};
 use super::{TgBot, TgBotExt};
 
 pub struct OrderService {
+    db: DatabaseConnection,
     api_client: ApiClient,
     tg_client: TgBot,
 }
@@ -35,15 +38,16 @@ impl fmt::Display for OrderServiceError {
 
 #[async_trait]
 pub trait OrderServiceMethods {
-    fn new(api_client: ApiClient, tg_client: TgBot) -> Self;
+    fn new(db: DatabaseConnection, api_client: ApiClient, tg_client: TgBot) -> Self;
     async fn get_cart(&self, cart: Vec<String>) -> Result<Vec<Product>, GetProductError>;
     async fn add_order(&self, order: Order) -> Result<(), OrderServiceError>;
 }
 
 #[async_trait]
 impl OrderServiceMethods for OrderService {
-    fn new(api_client: ApiClient, tg_client: TgBot) -> Self {
+    fn new(db: DatabaseConnection, api_client: ApiClient, tg_client: TgBot) -> Self {
         OrderService {
+            db,
             api_client,
             tg_client,
         }
@@ -59,6 +63,16 @@ impl OrderServiceMethods for OrderService {
 
     async fn add_order(&self, order: Order) -> Result<(), OrderServiceError> {
         info!("Try to add order: {:?}", &order);
+
+        let recipient = recipient::ActiveModel {
+            email: Set(order.recipient.email.clone()),
+            name: Set(order.recipient.name.clone()),
+            ..Default::default()
+        };
+
+        recipient.save(&self.db).await.unwrap();
+        
+
         let cart = match self
             .get_cart(order.cart)
             .await

@@ -3,5 +3,5 @@ mod tg;
 mod recaptcha;
 
 pub use order::{OrderService, OrderServiceMethods};
-pub use tg::{TgBotConfig, TgBot, TgBotExt};
-pub use recaptcha::{Recaptcha, RecaptchaConfig, RecaptchaMethods, RecaptchaError};
+pub use tg::{TgBot, TgBotExt};
+pub use recaptcha::{Recaptcha, RecaptchaMethods, RecaptchaError};

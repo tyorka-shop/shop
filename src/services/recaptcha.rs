@@ -1,21 +1,7 @@
 use async_trait::async_trait;
+use config::RecaptchaConfig;
 use log::info;
-use serde::{Deserialize, Serialize};
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct RecaptchaConfig {
-  pub enabled: bool,
-  pub key: String
-}
-
-impl Default for RecaptchaConfig {
-  fn default() -> Self {
-    Self {
-      enabled: false,
-      key: "xxx".into()
-    }
-  }
-}
+use serde::{Deserialize};
 
 pub struct Recaptcha {
   config: RecaptchaConfig

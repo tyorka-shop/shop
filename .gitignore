@@ -1,2 +1,4 @@
 /target
 schema.graphql
+.env
+store

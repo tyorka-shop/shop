@@ -1,24 +1,10 @@
 use async_trait::async_trait;
+use config::ApiClientConfig;
 use graphql_client::Response;
 use log::{debug, error};
 use reqwest::header;
-use serde::{de::DeserializeOwned, Serialize, Deserialize};
+use serde::{de::DeserializeOwned, Serialize};
 use std::{error::Error, fmt::Debug};
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ApiClientConfig {
-    pub url: String,
-    pub token: String,
-}
-
-impl Default for ApiClientConfig {
-    fn default() -> Self {
-        Self {
-            url: "http://localhost:3000".into(),
-            token: "xxx".into(),
-        }
-    }
-}
 
 #[derive(Clone, Debug)]
 pub struct ApiClient {

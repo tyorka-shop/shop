@@ -1,9 +1,14 @@
-use crate::{
-    api::ApiClientConfig,
-    services::{RecaptchaConfig, TgBotConfig},
-};
-use rand::{distributions::Alphanumeric, Rng};
+use random::make_secret_key;
 use serde::{Deserialize, Serialize};
+
+mod random;
+mod recaptcha;
+mod tgbot;
+mod api_client;
+
+pub use recaptcha::RecaptchaConfig;
+pub use tgbot::TgBotConfig;
+pub use api_client::ApiClientConfig;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -15,14 +20,6 @@ pub struct Config {
     pub recaptcha: RecaptchaConfig,
 
     pub database_uri: String,
-}
-
-pub fn make_secret_key() -> String {
-    rand::thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(256)
-        .map(char::from)
-        .collect()
 }
 
 impl Default for Config {
@@ -38,6 +35,6 @@ impl Default for Config {
     }
 }
 
-pub fn load() -> Config {
-    confy::load::<Config>("tyorka-shop").unwrap()
+pub fn load(name: &str) -> Config {
+    confy::load::<Config>(name).unwrap()
 }

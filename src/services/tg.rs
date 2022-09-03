@@ -1,24 +1,8 @@
-use std::fmt;
 use async_trait::async_trait;
+use config::TgBotConfig;
 use log::info;
-use serde::{Serialize, Deserialize};
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct TgBotConfig {
-    pub chats: Vec<String>,
-    pub enabled: bool,
-    pub token: String,
-}
-
-impl Default for TgBotConfig {
-    fn default() -> Self {
-        Self {
-            chats: vec![],
-            enabled: false,
-            token: "xxx".into(),
-        }
-    }
-}
+use serde::Serialize;
+use std::fmt;
 
 pub struct TgBot {
     config: TgBotConfig,
@@ -31,7 +15,7 @@ pub enum TgError {
 impl fmt::Display for TgError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::HttpError(e) => write!(f, "{}", e)
+            Self::HttpError(e) => write!(f, "{}", e),
         }
     }
 }
@@ -88,6 +72,4 @@ impl TgBotExt for TgBot {
         }
         Ok(())
     }
-
-    
 }

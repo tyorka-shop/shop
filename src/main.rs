@@ -3,19 +3,22 @@ use actix_web_grants::permissions::AuthDetails;
 use actix_web_grants::GrantsMiddleware;
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 use grant::{Role, RoleData};
+use sea_orm::Database;
 use std::io;
 
 mod api;
-mod config;
+// mod config;
 mod entity;
 mod grant;
 mod graphql_schema;
 mod services;
 
+use config;
+
 use crate::api::{ApiClient, GraphQLClient};
 use crate::grant::extract;
 use graphql_schema::{build_schema, GQLSchema};
-use services::{OrderService, OrderServiceMethods, TgBot, TgBotExt, Recaptcha, RecaptchaMethods};
+use services::{OrderService, OrderServiceMethods, Recaptcha, RecaptchaMethods, TgBot, TgBotExt};
 
 async fn index(
     schema: web::Data<GQLSchema>,
@@ -31,16 +34,25 @@ async fn index(
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     env_logger::init();
-    let cfg = config::load();
+    let cfg = config::load("tyorka-shop".into());
     let port = cfg.port.clone();
+
+    let db = Database::connect(&cfg.database_uri)
+        .await
+        .expect("Could not connect to database");
 
     HttpServer::new(move || {
         let auth = GrantsMiddleware::with_extractor(extract);
         let api_client = ApiClient::new(&cfg.api_client).unwrap();
-        let order_service = OrderService::new(api_client.clone(), TgBot::new(&cfg.tg_client));
+        let order_service =
+            OrderService::new(db.clone(), api_client.clone(), TgBot::new(&cfg.tg_client));
         let recaptcha = Recaptcha::new(&cfg.recaptcha);
 
-        let schema = build_schema().data(api_client).data(order_service).data(recaptcha).finish();
+        let schema = build_schema()
+            .data(api_client)
+            .data(order_service)
+            .data(recaptcha)
+            .finish();
 
         App::new()
             .wrap(middleware::Logger::default())
