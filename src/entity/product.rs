@@ -1,7 +1,9 @@
-use super::id::ID;
+use async_graphql::SimpleObject;
+use entity::cart_item;
 
+#[derive(SimpleObject, Debug)]
 pub struct Product {
-  pub id: ID,
+  pub id: String,
   pub title: String,
   pub count: u32,
   pub price: u32,
@@ -14,6 +16,17 @@ impl Product {
       title: title.to_string(),
       count: 1,
       price,
+    }
+  }
+}
+
+impl From<cart_item::Model> for Product {
+  fn from(item: cart_item::Model) -> Self {
+    Self {
+      id: item.product_id,
+      title: item.title,
+      count: item.count,
+      price: item.price,
     }
   }
 }

@@ -4,7 +4,7 @@ up:
 	cargo run -p migration -- up
 
 clean:
-	rm ./build/*
+	rm -f ./build/*
 
 build: clean
 	docker build -t tyorka-shop .

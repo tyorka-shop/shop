@@ -9,6 +9,7 @@ pub struct Model {
     pub id: String,
     pub count: u32,
     pub price: u32,
+    pub title: String,
     pub order_id: String,
     pub product_id: String,
 }
@@ -33,10 +34,6 @@ impl Related<super::order::Entity> for Entity {
 
 impl ActiveModelBehavior for ActiveModel {
     fn before_save(self, insert: bool) -> Result<Self, DbErr> {
-        if !insert || self.id.is_set() {
-            return Ok(self);
-        }
-
         Ok(Self {
             id: if insert && self.id.is_not_set() {
                 Set(Uuid::new_v4().to_string())

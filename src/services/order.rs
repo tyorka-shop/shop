@@ -1,13 +1,12 @@
 use async_trait::async_trait;
-use entity::cart_item;
-use entity::order;
 use indoc::formatdoc;
 use log::{error, info};
-use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
+use sea_orm::DatabaseConnection;
 use std::fmt;
 
 use crate::api::{ApiClient, ApiMethods, GetProductError};
-use crate::entity::{Order, Product};
+use crate::entity::{Order, Store};
+use crate::entity::{Product, Recipient};
 
 use super::{TgBot, TgBotExt};
 
@@ -19,7 +18,7 @@ pub struct OrderService {
 
 pub enum OrderServiceError {
     GetProductError,
-    SaveError
+    SaveError,
 }
 
 impl From<OrderServiceError> for String {
@@ -44,8 +43,12 @@ impl fmt::Display for OrderServiceError {
 pub trait OrderServiceMethods {
     fn new(db: DatabaseConnection, api_client: ApiClient, tg_client: TgBot) -> Self;
     async fn get_cart(&self, cart: &Vec<String>) -> Result<Vec<Product>, GetProductError>;
-    async fn add_order(&self, order: Order) -> Result<(), OrderServiceError>;
-    async fn notify(&self, order: Order) -> Result<(), OrderServiceError>;
+    async fn create_order(
+        &self,
+        recipient: Recipient,
+        cart: Vec<String>,
+    ) -> Result<Order, OrderServiceError>;
+    async fn notify(&self, order: &Order) -> Result<(), OrderServiceError>;
 }
 
 #[async_trait]
@@ -66,16 +69,9 @@ impl OrderServiceMethods for OrderService {
         Ok(products)
     }
 
-    async fn notify(&self, order: Order) -> Result<(), OrderServiceError> {
-        let cart = match self.get_cart(&order.cart).await {
-            Ok(cart) => cart,
-            Err(_) => {
-                error!("Can not get products");
-                return Err(OrderServiceError::GetProductError);
-            }
-        };
-
-        let titles = cart
+    async fn notify(&self, order: &Order) -> Result<(), OrderServiceError> {
+        let titles = order
+            .cart
             .iter()
             .map(|product| format!("- {}", product.title.clone()))
             .collect::<Vec<_>>()
@@ -101,47 +97,33 @@ impl OrderServiceMethods for OrderService {
         }
     }
 
-    async fn add_order(&self, order: Order) -> Result<(), OrderServiceError> {
-        info!("Try to add order: {:?}", &order);
-
-        let cart = match self.get_cart(&order.cart).await {
+    async fn create_order(
+        &self,
+        recipient: Recipient,
+        cart: Vec<String>,
+    ) -> Result<Order, OrderServiceError> {
+        
+        let cart = match self.get_cart(&cart).await {
             Ok(cart) => cart,
             Err(_) => {
                 error!("Can not get products");
                 return Err(OrderServiceError::GetProductError);
             }
         };
+        
+        info!("Try to add order {:?} for {:?}", &cart, &recipient);
 
-        let order_model = order::ActiveModel {
-            recipient_name: Set(order.recipient.name.clone()),
-            recipient_email: Set(order.recipient.email.clone()),
-            ..Default::default()
-        };
+        let order = Order::new(recipient, cart);
 
-        let result = order_model.save(&self.db).await.map_err(|_| {
-            error!("Can not save order");
-            OrderServiceError::SaveError
-        })?;
-
-        let order_id = result.id.unwrap();
-
-        for product in cart {
-            let cart_item_model = cart_item::ActiveModel {
-                order_id: Set(order_id.clone()),
-                product_id: Set(product.id.into()),
-                price: Set(product.price),
-                ..Default::default()
-            };
-            cart_item_model.save(&self.db).await.map_err(|_| {
-                error!("Can not save cart item");
-                OrderServiceError::SaveError
-            })?;
-        }
+        order
+            .insert(&self.db)
+            .await
+            .map_err(|_| OrderServiceError::SaveError)?;
 
         info!("Order saved");
 
-        self.notify(order).await?;
+        self.notify(&order).await?;
 
-        Ok(())
+        Ok(order)
     }
 }

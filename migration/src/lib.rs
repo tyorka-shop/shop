@@ -3,6 +3,7 @@ pub use sea_orm_migration::prelude::*;
 mod m20220101_000001_create_cart_item;
 mod m20220903_141616_mail_sendings;
 mod m20220903_144201_order;
+mod m20220904_225301_add_title_col;
 
 pub struct Migrator;
 
@@ -13,6 +14,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20220101_000001_create_cart_item::Migration),
             Box::new(m20220903_141616_mail_sendings::Migration),
             Box::new(m20220903_144201_order::Migration),
+            Box::new(m20220904_225301_add_title_col::Migration),
         ]
     }
 }

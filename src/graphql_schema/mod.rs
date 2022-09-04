@@ -1,9 +1,14 @@
 mod mutations;
 mod queries;
+mod recipient_input;
+mod order_input;
+mod product_input;
 
 use async_graphql::{EmptySubscription, Schema, SchemaBuilder};
 pub use mutations::Mutations;
 pub use queries::Queries;
+
+pub use recipient_input::RecipientInput;
 
 pub type GQLSchema = Schema<Queries, Mutations, EmptySubscription>;
 
