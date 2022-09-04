@@ -22,7 +22,7 @@ tokio = "1.20.1"
 sea-orm = { version = "^0", features = [ "runtime-tokio-native-tls", "sqlx-sqlite", "macros" ] }
 lazy_static = "1.4.0"
 time = "0.3.11"
-cached = "0.39.0"
+actix-cors = "0.6.2"
 
 [workspace]
 members = [".", "config", "migration", "entity"]

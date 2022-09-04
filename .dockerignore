@@ -1,0 +1,6 @@
+store
+.env
+target
+build
+.github
+Dockerfile

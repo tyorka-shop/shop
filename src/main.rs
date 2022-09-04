@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_web::{self, guard, middleware, web, App, HttpServer};
 use actix_web_grants::permissions::AuthDetails;
 use actix_web_grants::GrantsMiddleware;
@@ -8,11 +9,11 @@ use std::io;
 
 mod api;
 // mod config;
+mod cache;
 mod entity;
 mod grant;
 mod graphql_schema;
 mod services;
-mod cache;
 use config;
 
 use crate::api::{ApiClient, GraphQLClient};
@@ -54,9 +55,14 @@ async fn main() -> io::Result<()> {
             .data(recaptcha)
             .finish();
 
+        let cors = Cors::default()
+            .allowed_origin("https://tyorka.com")
+            .allowed_methods(vec!["POST"]);
+
         App::new()
             .wrap(middleware::Logger::default())
             .wrap(auth)
+            .wrap(cors)
             .app_data(web::Data::new(cfg.clone()))
             .app_data(web::Data::new(schema.clone()))
             .service(web::resource("/graphql").guard(guard::Post()).to(index))

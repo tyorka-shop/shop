@@ -14,12 +14,12 @@ pub use api_client::ApiClientConfig;
 pub struct Config {
     pub port: String,
     pub secret: String,
+    pub database_uri: String,
+    pub cors_allowed_origins: Vec<String>,
 
     pub api_client: ApiClientConfig,
     pub tg_client: TgBotConfig,
     pub recaptcha: RecaptchaConfig,
-
-    pub database_uri: String,
 }
 
 impl Default for Config {
@@ -27,10 +27,11 @@ impl Default for Config {
         Self {
             port: "3001".into(),
             secret: make_secret_key(),
+            cors_allowed_origins: vec!["http://localhost:3000".into()],
+            database_uri: "sqlite:./store/data.db".into(),
             api_client: Default::default(),
             tg_client: Default::default(),
             recaptcha: Default::default(),
-            database_uri: "sqlite:./store/data.db".into(),
         }
     }
 }

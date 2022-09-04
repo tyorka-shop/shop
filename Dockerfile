@@ -1,8 +1,12 @@
 FROM rust:1.61 AS builder
-COPY . .
-RUN cargo build --release
+COPY . /build
+WORKDIR /build
+RUN cargo build --release --workspace
 
-FROM debian:buster-slim
-COPY --from=builder ./target/release/tyorka-shop ./app
+FROM ubuntu:20.04
+RUN apt-get update && apt-get install -y libssl-dev
+COPY --from=builder /build/target/release/tyorka-shop /build/target/release/migration /usr/local/bin/
+
 EXPOSE 3001
-CMD ["app"]
+
+CMD ["tyorka-shop"]
