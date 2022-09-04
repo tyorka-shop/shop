@@ -1,5 +1,5 @@
 use actix_cors::Cors;
-use actix_web::{self, guard, middleware, web, App, HttpServer};
+use actix_web::{self, guard, middleware, web, App, HttpResponse, HttpServer};
 use actix_web_grants::permissions::AuthDetails;
 use actix_web_grants::GrantsMiddleware;
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
@@ -55,17 +55,28 @@ async fn main() -> io::Result<()> {
             .data(recaptcha)
             .finish();
 
-        let cors = Cors::default()
-            .allowed_origin("https://tyorka.com")
-            .allowed_methods(vec!["POST"]);
+        let mut cors = Cors::default()
+            .allowed_methods(vec!["POST"])
+            .allow_any_header()
+            .max_age(3600);
+
+        for origin in cfg.cors_allowed_origins.iter() {
+            cors = cors.allowed_origin(origin);
+        }
 
         App::new()
             .wrap(middleware::Logger::default())
-            .wrap(auth)
             .wrap(cors)
+            .wrap(auth)
             .app_data(web::Data::new(cfg.clone()))
             .app_data(web::Data::new(schema.clone()))
             .service(web::resource("/graphql").guard(guard::Post()).to(index))
+            .service(
+                web::resource("/graphql")
+                    .guard(guard::Options())
+                    .to(|| HttpResponse::Ok()),
+            )
+
     })
     .bind(format!("0.0.0.0:{port}", port = port))?
     .run()
