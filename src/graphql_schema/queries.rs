@@ -1,46 +1,36 @@
 use crate::{
-    api::{ApiClient, ApiMethods},
-    grant::{RoleData, RoleDataExt},
+    entity::{Order, Store},
+    grant::RoleData,
 };
-use async_graphql::{Context, Error, Object, Result, SimpleObject};
+use async_graphql::{Context, Object, Result};
+use sea_orm::DatabaseConnection;
+
+use super::orders::Orders;
 
 pub struct Queries;
 
-#[derive(SimpleObject)]
-pub struct ProductObject {
-    pub id: String,
-    pub title: String,
-}
-
 #[Object]
 impl Queries {
-    async fn status(&self) -> Result<&str> {
-        Ok("Ok")
+    async fn status(&self) -> Result<String> {
+        Ok("Ok".into())
     }
 
     async fn my_role<'a>(&self, ctx: &Context<'a>) -> Result<String> {
-        match ctx.data::<RoleData>() {
-            Ok(role) => Ok(String::from(role)),
-            Err(e) => Err(e),
-        }
+        let result = ctx.data::<RoleData>().unwrap();
+        Ok(result.into())
     }
 
-    async fn product<'a>(&self, ctx: &Context<'a>, id: String) -> Result<String> {
-        match ctx.data::<RoleData>() {
-            Ok(role) => {
-                if !&role.is_admin() {
-                    return Err(Error::new("Access denied"));
-                }
-            }
-            Err(e) => {return Err(e)},
-        }
-        let api_client = ctx.data::<ApiClient>().unwrap();
+    #[graphql(guard = "RoleData::admin()")]
+    async fn orders<'a>(&self, ctx: &Context<'a>) -> Result<Orders> {
+        let db = ctx.data::<DatabaseConnection>().unwrap();
+        let list = Order::find(db).await;
+        Ok(Orders { list })
+    }
 
-        let product = api_client
-            .get_product(&id)
-            .await
-            .map_err(|e| Error::new(format!("{}", e)))?;
-
-        Ok(product.title)
+    #[graphql(guard = "RoleData::admin()")]
+    async fn order<'a>(&self, ctx: &Context<'a>, id: String) -> Result<Order> {
+        let db = ctx.data::<DatabaseConnection>().unwrap();
+        let order = Order::find_one(db, &id).await.unwrap();
+        Ok(order)
     }
 }

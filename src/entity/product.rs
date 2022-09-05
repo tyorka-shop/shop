@@ -3,30 +3,24 @@ use entity::cart_item;
 
 #[derive(SimpleObject, Debug)]
 pub struct Product {
-  pub id: String,
-  pub title: String,
-  pub count: u32,
-  pub price: u32,
+    pub id: String,
+    pub title: String,
 }
 
 impl Product {
-  pub fn new(id: &str, title: &str, price: u32) -> Self {
-    Self {
-      id: id.into(),
-      title: title.to_string(),
-      count: 1,
-      price,
+    pub fn new(id: &str, title: &str) -> Self {
+        Self {
+            id: id.into(),
+            title: title.to_string(),
+        }
     }
-  }
 }
 
 impl From<cart_item::Model> for Product {
-  fn from(item: cart_item::Model) -> Self {
-    Self {
-      id: item.product_id,
-      title: item.title,
-      count: item.count,
-      price: item.price,
+    fn from(item: cart_item::Model) -> Self {
+        Self {
+            id: item.product_id,
+            title: item.title,
+        }
     }
-  }
 }

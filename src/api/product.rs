@@ -4,7 +4,6 @@ use std::fmt;
 use graphql_client::GraphQLQuery;
 
 use crate::api::{ApiClient, GraphQLClient};
-use crate::entity::Product;
 
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -14,6 +13,7 @@ use crate::entity::Product;
 )]
 pub struct ProductQuery;
 
+#[derive(Debug)]
 pub enum GetProductError {
     NotFound,
     NoPrice
@@ -28,6 +28,12 @@ impl fmt::Display for GetProductError {
     }
 }
 
+pub struct Product {
+    pub id: String,
+    pub title: String,
+    pub price: u32,
+}
+
 impl Product {
     fn from(response: product_query::ProductQueryProduct) -> Result<Self, GetProductError> {
         let price = match response.price {
@@ -40,7 +46,11 @@ impl Product {
             .and_then(|title| title.ru.or(title.en))
             .unwrap_or_else(|| response.id.clone());
 
-        Ok(Self::new(&response.id, &title, (price * 100_f64) as u32))
+        Ok(Self {
+            id: response.id,
+            title,
+            price: (price * 100_f64) as u32
+        })
     }
 }
 

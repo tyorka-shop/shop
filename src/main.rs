@@ -8,13 +8,11 @@ use sea_orm::Database;
 use std::io;
 
 mod api;
-// mod config;
 mod cache;
 mod entity;
 mod grant;
 mod graphql_schema;
 mod services;
-
 
 use config;
 
@@ -47,14 +45,16 @@ async fn main() -> io::Result<()> {
     HttpServer::new(move || {
         let auth = GrantsMiddleware::with_extractor(extract);
         let api_client = ApiClient::new(&cfg.api_client).unwrap();
-        let order_service =
-            OrderService::new(db.clone(), api_client.clone(), TgBot::new(&cfg.tg_client));
+        let tg_client = TgBot::new(&cfg.tg_client);
+        let order_service = OrderService::new(api_client.clone());
         let recaptcha = Recaptcha::new(&cfg.recaptcha);
 
         let schema = build_schema()
             .data(api_client)
             .data(order_service)
             .data(recaptcha)
+            .data(tg_client)
+            .data(db.clone())
             .finish();
 
         let mut cors = Cors::default()
@@ -78,7 +78,6 @@ async fn main() -> io::Result<()> {
                     .guard(guard::Options())
                     .to(|| HttpResponse::Ok()),
             )
-
     })
     .bind(format!("0.0.0.0:{port}", port = port))?
     .run()

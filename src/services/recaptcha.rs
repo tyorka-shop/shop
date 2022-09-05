@@ -1,60 +1,71 @@
 use async_trait::async_trait;
 use config::RecaptchaConfig;
-use log::info;
-use serde::{Deserialize};
+use log::{error, info};
+use sea_orm::strum::Display;
+use serde::Deserialize;
 
 pub struct Recaptcha {
-  config: RecaptchaConfig
+    config: RecaptchaConfig,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct Response {
-  success: bool
+    success: bool,
 }
 
+#[derive(Debug, Display)]
 pub enum RecaptchaError {
-  HttpError(reqwest::Error),
-  InvalidResponse(reqwest::Error)
+    HttpError,
+    InvalidResponse,
+    WrongCaptcha,
 }
 
 #[async_trait]
 pub trait RecaptchaMethods {
-  fn new(config: &RecaptchaConfig) -> Self;
-  async fn verify(&self, value: &str) -> Result<bool, RecaptchaError>;
+    fn new(config: &RecaptchaConfig) -> Self;
+    async fn verify(&self, value: &str) -> Result<(), RecaptchaError>;
 }
 
 #[async_trait]
 impl RecaptchaMethods for Recaptcha {
-  fn new(config: &RecaptchaConfig) -> Self {
-    Recaptcha {
-      config: config.clone()
+    fn new(config: &RecaptchaConfig) -> Self {
+        Recaptcha {
+            config: config.clone(),
+        }
     }
-  }
 
-  async fn verify(&self, value: &str) -> Result<bool, RecaptchaError> {
-    if !self.config.enabled {
-      info!("Recaptcha is disabled");
-      return Ok(true);
+    async fn verify(&self, value: &str) -> Result<(), RecaptchaError> {
+        if !self.config.enabled {
+            info!("Recaptcha is disabled");
+            return Ok(());
+        }
+        info!("Verifying recaptcha with value: {}", value);
+        let response = reqwest::Client::new()
+            .post("https://www.google.com/recaptcha/api/siteverify")
+            .form(&[
+                ("secret", &self.config.key),
+                ("response", &value.to_string()),
+            ])
+            .send()
+            .await
+            .map_err(|e| {
+                error!("Can not verify captcha {:?}", e);
+                RecaptchaError::HttpError
+            })?
+            .json::<Response>()
+            .await
+            .map_err(|e| {
+                error!("Invalid captcha response: {:?}", e);
+                RecaptchaError::InvalidResponse
+            })?;
+
+        info!("Response: {:?}", response);
+        match response.success {
+            true => Ok(()),
+            false => {
+                error!("Wrong captcha");
+                Err(RecaptchaError::WrongCaptcha)
+            }
+        }
     }
-    info!("Verifying recaptcha with value: {}", value);
-    let client = reqwest::Client::new();
-    let response = match client.post("https://www.google.com/recaptcha/api/siteverify")
-      .form(&[
-        ("secret", &self.config.key),
-        ("response", &value.to_string())
-      ])
-      .send()
-      .await {
-        Ok(response) => response,
-        Err(e) => return Err(RecaptchaError::HttpError(e)) 
-      };
-      
-    let response = match response.json::<Response>().await {
-      Ok(body) => body,
-      Err(e) => return Err(RecaptchaError::InvalidResponse(e))
-    };
-
-    info!("Response: {:?}", response);
-    Ok(response.success)
-  }
 }

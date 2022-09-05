@@ -3,4 +3,4 @@ mod gql;
 
 
 pub use gql::{ApiClient, GraphQLClient};
-pub use product::{ApiMethods, GetProductError};
+pub use product::{ApiMethods, GetProductError, Product};

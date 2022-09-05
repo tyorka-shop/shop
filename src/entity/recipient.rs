@@ -1,9 +1,8 @@
 use async_graphql::SimpleObject;
-use serde::Deserialize;
 
 use crate::graphql_schema::RecipientInput;
 
-#[derive(SimpleObject, Debug, Deserialize)]
+#[derive(SimpleObject, Debug)]
 pub struct Recipient {
     pub name: String,
     pub email: String,
