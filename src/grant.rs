@@ -7,6 +7,8 @@ use async_graphql::Guard;
 use async_graphql::{Context, Result};
 use async_trait::async_trait;
 use constant_time_eq::constant_time_eq;
+use session_service_grpc::Client;
+
 
 #[derive(PartialEq, Clone)]
 pub enum Role {
@@ -14,8 +16,24 @@ pub enum Role {
     Admin,
 }
 
-fn is_admin(req: &ServiceRequest) -> bool {
+async fn is_admin(req: &ServiceRequest) -> bool {
     let cfg = req.app_data::<Data<Config>>().unwrap();
+    let session_service_client = req.app_data::<Data<Client>>().unwrap();
+
+    let auth = match req.cookie("access_token") {
+        Some(cookie) => {
+            let token = cookie.value();
+            match session_service_client.verify(token).await {
+                Ok(email) => Some(email),
+                Err(_) => None,
+            }
+        }
+        None => None,
+    };
+
+    if let Some(_) = auth {
+        return true;
+    } 
 
     match req.headers().get("x-auth") {
         Some(token) => match token.to_str() {
@@ -27,7 +45,7 @@ fn is_admin(req: &ServiceRequest) -> bool {
 }
 
 pub async fn extract(req: &ServiceRequest) -> Result<Vec<Role>, Error> {
-    match is_admin(&req) {
+    match is_admin(&req).await {
         true => Ok(vec![Role::Admin]),
         false => Ok(vec![Role::Client]),
     }

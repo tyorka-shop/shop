@@ -6,6 +6,7 @@ use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 use grant::{Role, RoleData};
 use sea_orm::Database;
 use std::io;
+use session_service_grpc::Client;
 
 mod api;
 mod cache;
@@ -42,6 +43,8 @@ async fn main() -> io::Result<()> {
         .await
         .expect("Could not connect to database");
 
+    let session_service_client = Client::new("localhost:50051".into());
+
     HttpServer::new(move || {
         let auth = GrantsMiddleware::with_extractor(extract);
         let api_client = ApiClient::new(&cfg.api_client).unwrap();
@@ -71,7 +74,8 @@ async fn main() -> io::Result<()> {
             .wrap(cors)
             .wrap(auth)
             .app_data(web::Data::new(cfg.clone()))
-            .app_data(web::Data::new(schema.clone()))
+            .app_data(web::Data::new(schema))
+            .app_data(web::Data::new(session_service_client.clone()))
             .service(web::resource("/graphql").guard(guard::Post()).to(index))
             .service(
                 web::resource("/graphql")
