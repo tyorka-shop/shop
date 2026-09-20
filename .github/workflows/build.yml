@@ -1,0 +1,27 @@
+name: build
+
+on: [push]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  prod:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Login to registry
+      uses: docker/login-action@v4
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build
+      run: docker build -t ghcr.io/tyorka-shop/shop:latest .
+    
+    - name: Publish
+      run: docker push ghcr.io/tyorka-shop/shop:latest
