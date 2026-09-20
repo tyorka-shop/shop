@@ -37,7 +37,7 @@ async fn index(
 async fn main() -> io::Result<()> {
     env_logger::init();
     let cfg = config::load("tyorka-shop".into());
-    let port = cfg.port.clone();
+    let addr = cfg.addr.clone();
 
     let db = Database::connect(&cfg.database_uri)
         .await
@@ -83,7 +83,7 @@ async fn main() -> io::Result<()> {
                     .to(|| HttpResponse::Ok()),
             )
     })
-    .bind(format!("0.0.0.0:{port}", port = port))?
+    .bind(format!("{addr}", addr = addr))?
     .run()
     .await
 }

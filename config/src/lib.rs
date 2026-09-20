@@ -12,7 +12,9 @@ pub use api_client::ApiClientConfig;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
+    // @deprecated: use `addr` instead
     pub port: String,
+    pub addr: String,
     pub secret: String,
     pub database_uri: String,
     pub cors_allowed_origins: Vec<String>,
@@ -26,6 +28,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             port: "3001".into(),
+            addr: "127.0.0.1:3001".into(),
             secret: make_secret_key(),
             cors_allowed_origins: vec!["http://localhost:3000".into()],
             database_uri: "sqlite:./store/data.db".into(),
