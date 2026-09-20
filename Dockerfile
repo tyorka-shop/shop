@@ -1,12 +1,12 @@
-FROM rust:1.61 AS builder
+FROM rust:1.85-bookworm AS builder
 COPY . /build
 WORKDIR /build
 RUN cargo build --release --workspace
 
-FROM debian:11
-# RUN apt-get update && apt-get install -y libssl-dev
+FROM debian:trixie-slim
+LABEL org.opencontainers.image.source=https://github.com/tyorka-shop/shop
 COPY --from=builder /build/target/release/tyorka-shop /build/target/release/migration /usr/local/bin/
 
-EXPOSE 3001
+EXPOSE 3003
 
-CMD ["tyorka-shop"]
+ENTRYPOINT ["/usr/local/bin/tyorka-shop"]
